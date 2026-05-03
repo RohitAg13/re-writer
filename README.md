@@ -11,7 +11,9 @@
   <a href="#contributing"><img alt="prs welcome" src="https://img.shields.io/badge/PRs-welcome-ec4899"></a>
 </p>
 
-<p align="center"><em>Add a screenshot or GIF here — drop one into <code>docs/demo.gif</code> and link it.</em></p>
+<p align="center">
+  <img src="docs/demo.svg" alt="Voice Rewriter — streaming preview popover" width="960">
+</p>
 
 ---
 
@@ -47,7 +49,7 @@ Select text → right-click → **Rewrite** → pick an action. The result strea
 > Not on the Chrome Web Store yet. Load it unpacked:
 
 ```bash
-git clone https://github.com/<your-handle>/voice-rewriter.git
+git clone https://github.com/rohitag13/re-writer.git
 cd voice-rewriter
 ```
 
@@ -80,6 +82,8 @@ Cmd/Ctrl-Z undoes the rewrite — like any other edit.
 ---
 
 ## How it works
+
+For the full deep-dive (selection capture timing, the port-based streaming protocol, SSE parsing, the Shadow-DOM popover, why the system prompt is structured the way it is), see [`docs/architecture.md`](docs/architecture.md).
 
 ```
    selected text
@@ -166,8 +170,6 @@ Have a feature you want? [Open an issue](../../issues/new/choose).
 ## Contributing
 
 Pull requests welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). The codebase is intentionally small and dependency-free — easy to read, easy to fork, easy to PR.
-
-If you ship a fork or a derivative, drop a link in [Discussions](../../discussions). Always curious to see what people build on top.
 
 ---
 
