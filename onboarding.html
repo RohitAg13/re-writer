@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Voice Rewriter — Setup</title>
+  <link rel="stylesheet" href="onboarding.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail">
+      <div class="brand">Voice Rewriter</div>
+      <ol class="steps">
+        <li data-step="welcome"><span class="dot"></span> Welcome</li>
+        <li data-step="provider"><span class="dot"></span> Provider</li>
+        <li data-step="key"><span class="dot"></span> API key</li>
+        <li data-step="voice"><span class="dot"></span> Voice</li>
+        <li data-step="done"><span class="dot"></span> Done</li>
+      </ol>
+    </aside>
+
+    <main class="page">
+      <!-- Step: welcome -->
+      <section class="step" data-step="welcome">
+        <h1>Rewrite anything you've written, in your own voice.</h1>
+        <p>Select text on any webpage, right-click, pick a rewrite — Refine, Formalize, Elaborate, Shorten, Make casual, or Fix grammar. The result streams back into a preview you can accept or discard.</p>
+        <ul class="bullets">
+          <li>Calls go through a hosted gateway (Vercel AI Gateway or OpenRouter), not direct provider keys.</li>
+          <li>You write a "voice profile" once. Every rewrite mimics your style.</li>
+          <li>Built-in guardrails to avoid sounding like an LLM.</li>
+        </ul>
+        <div class="nav">
+          <span class="spacer"></span>
+          <button class="primary" data-next>Get started →</button>
+        </div>
+      </section>
+
+      <!-- Step: provider -->
+      <section class="step" data-step="provider" hidden>
+        <h1>Pick a backend.</h1>
+        <p class="sub">Both options route to many models behind a single API key. You can switch later in settings.</p>
+        <div class="cards" id="providerCards"></div>
+        <div class="nav">
+          <button class="ghost" data-back>← Back</button>
+          <span class="spacer"></span>
+          <button class="primary" data-next>Continue →</button>
+        </div>
+      </section>
+
+      <!-- Step: key -->
+      <section class="step" data-step="key" hidden>
+        <h1 id="keyTitle">Add your API key.</h1>
+        <p class="sub" id="keySub"></p>
+        <label class="field">
+          <span>API key</span>
+          <input id="apiKey" type="password" placeholder="paste your key" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Model</span>
+          <input id="model" type="text" />
+          <small id="modelHint" class="hint"></small>
+        </label>
+        <label class="field" id="endpointField" hidden>
+          <span>Endpoint URL</span>
+          <input id="customEndpoint" type="text" placeholder="https://your-host/v1/chat/completions" />
+        </label>
+        <p class="hint">Stored in <code>chrome.storage.local</code> on this device only.</p>
+        <p class="error" id="keyError" hidden></p>
+        <div class="nav">
+          <button class="ghost" data-back>← Back</button>
+          <button class="ghost" id="testBtn">Test connection</button>
+          <span class="spacer"></span>
+          <button class="primary" data-next>Continue →</button>
+        </div>
+      </section>
+
+      <!-- Step: voice -->
+      <section class="step" data-step="voice" hidden>
+        <h1>Teach it your voice.</h1>
+        <p class="sub">Describe how you write, or paste a few paragraphs. Skip if you'd rather just use the defaults.</p>
+        <textarea id="voice" rows="10" placeholder="Example:&#10;I write short, blunt sentences. I use lowercase a lot and rarely use semicolons. I'm comfortable with technical terms but avoid corporate jargon. I use 'tbh' and 'imo' in casual writing.&#10;&#10;-- or paste a writing sample --"></textarea>
+        <label class="check">
+          <input id="antiAI" type="checkbox" checked />
+          <span>Apply anti-AI guardrails (avoid "delve", em-dash overuse, "not X but Y" patterns, summary endings).</span>
+        </label>
+        <div class="nav">
+          <button class="ghost" data-back>← Back</button>
+          <button class="ghost" data-next>Skip</button>
+          <span class="spacer"></span>
+          <button class="primary" data-next>Save and continue →</button>
+        </div>
+      </section>
+
+      <!-- Step: done -->
+      <section class="step" data-step="done" hidden>
+        <h1>You're set.</h1>
+        <p>Try it now: select any text on a webpage, right-click, and pick <strong>Rewrite → Refine</strong>. The preview will stream in. Press <kbd>Enter</kbd> to accept or <kbd>Esc</kbd> to discard.</p>
+        <div class="demo">
+          <p class="hint">Want to test right here? Edit this paragraph, select some of it, and right-click:</p>
+          <div contenteditable="true" class="testbox">The exhibition opens on Friday and showcases work by emerging artists from the region. We expect a strong turnout based on early ticket sales, and the curator is excited about the diverse range of media on display, including sculpture, painting, and digital installations.</div>
+        </div>
+        <div class="nav">
+          <button class="ghost" id="openSettings">Open settings</button>
+          <span class="spacer"></span>
+          <button class="primary" id="finish">Finish</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="defaults.js"></script>
+  <script src="onboarding.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+
+# Build artifacts (none today, here for future-proofing)
+dist/
+build/
+*.zip
+*.crx
+*.pem
+
+# Node (only if a build step is added later)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local notes / scratch
+NOTES.md
+scratch/

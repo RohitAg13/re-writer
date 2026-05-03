@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Voice Rewriter — Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Voice Rewriter</h1>
+      <p class="sub">Right-click any selected text on a webpage and pick a rewrite. Settings stay on this device.</p>
+    </header>
+
+    <section>
+      <h2>Provider</h2>
+      <div class="row">
+        <label for="provider">Backend</label>
+        <select id="provider"></select>
+      </div>
+      <div class="row" id="endpointRow" hidden>
+        <label for="customEndpoint">Endpoint URL</label>
+        <input id="customEndpoint" type="text" placeholder="https://your-host/v1/chat/completions" />
+      </div>
+      <div class="row">
+        <label for="model">Model</label>
+        <input id="model" type="text" placeholder="provider/model" />
+      </div>
+      <p class="hint" id="modelHint"></p>
+      <div class="row">
+        <label for="apiKey">API key</label>
+        <input id="apiKey" type="password" placeholder="sk-…" autocomplete="off" />
+      </div>
+      <p class="hint" id="keyHint"></p>
+      <div class="row">
+        <label for="temperature">Temperature</label>
+        <input id="temperature" type="number" step="0.1" min="0" max="2" />
+      </div>
+      <p class="hint">Calls go from your browser directly to the gateway. Your key is stored in <code>chrome.storage.local</code> on this device only.</p>
+    </section>
+
+    <section>
+      <h2>Voice profile</h2>
+      <p class="hint">Describe how you write, or paste a few paragraphs you've written. The model will mimic this style.</p>
+      <textarea id="voice" rows="8" placeholder="Example: I write short, blunt sentences. I use lowercase a lot and rarely use semicolons. I'm comfortable with technical terms but avoid corporate jargon."></textarea>
+      <div class="row checkbox">
+        <input id="antiAI" type="checkbox" />
+        <label for="antiAI">Apply anti-AI guardrails (avoid common LLM tells like "delve", em-dash overuse, "not X but Y" patterns, summary endings)</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Action prompts</h2>
+      <p class="hint">These instructions are sent to the LLM along with your selected text. Edit freely.</p>
+      <div id="prompts"></div>
+      <button id="resetPrompts" class="ghost" type="button">Reset prompts to defaults</button>
+    </section>
+
+    <section>
+      <h2>Other</h2>
+      <button id="rerunOnboarding" class="ghost" type="button">Re-run onboarding</button>
+    </section>
+
+    <footer>
+      <button id="save" type="button">Save</button>
+      <span id="status" aria-live="polite"></span>
+    </footer>
+  </main>
+
+  <script src="defaults.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

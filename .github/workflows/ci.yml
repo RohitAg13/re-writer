@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    name: Lint & sanity checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Validate manifest.json
+        run: node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8'))"
+
+      - name: Syntax-check JS files
+        run: |
+          set -e
+          for f in $(git ls-files '*.js'); do
+            echo "checking $f"
+            node --check "$f"
+          done
+
+      - name: Verify referenced files exist
+        run: |
+          set -e
+          node -e '
+            const fs = require("fs");
+            const m = JSON.parse(fs.readFileSync("manifest.json", "utf8"));
+            const must = [m.background?.service_worker]
+              .concat((m.content_scripts ?? []).flatMap(cs => cs.js ?? []))
+              .concat(m.options_ui?.page ? [m.options_ui.page] : [])
+              .filter(Boolean);
+            for (const f of must) {
+              if (!fs.existsSync(f)) { console.error("missing:", f); process.exit(1); }
+            }
+            console.log("manifest references all exist:", must.join(", "));
+          '
