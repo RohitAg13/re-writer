@@ -7,7 +7,20 @@
 
   // ---------------- selection tracking ----------------
 
-  const captureSelection = () => {
+  const isFromPreview = (e) => {
+    // mouseup/keyup that bubbled out of our shadow-DOM popover must not
+    // overwrite the tracked selection (otherwise clicking Accept clears it).
+    const path = typeof e?.composedPath === 'function' ? e.composedPath() : [];
+    for (const node of path) {
+      if (node && node.nodeType === 1 && node.getAttribute && node.getAttribute('data-voice-rewriter')) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const captureSelection = (e) => {
+    if (e && isFromPreview(e)) return;
     const active = document.activeElement;
     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
       const start = active.selectionStart;
@@ -41,7 +54,8 @@
   document.addEventListener('contextmenu', captureSelection, true);
   document.addEventListener('mouseup', captureSelection, true);
   document.addEventListener('keyup', (e) => {
-    if (e.shiftKey || e.key === 'Shift') captureSelection();
+    if (isFromPreview(e)) return;
+    if (e.shiftKey || e.key === 'Shift') captureSelection(e);
   }, true);
 
   function getInputCaretRect(el, start, end) {
@@ -56,16 +70,22 @@
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.action === 'startPreview') {
       try {
-        if (!lastSelection) {
-          // No tracked selection in this frame; another frame likely owns it.
+        // If we were just injected on-demand we won't have captured the
+        // selection yet — try to grab it now (it survives the context-menu
+        // round-trip), and fall back to the text the background relayed
+        // from info.selectionText.
+        if (!lastSelection) captureSelection();
+        const originalText = lastSelection?.text || msg.text || '';
+        const anchorRect = lastSelection?.rect || null;
+        if (!originalText) {
           sendResponse({ ok: false, reason: 'no-selection' });
           return true;
         }
         openPreview({
           actionId: msg.actionId,
           actionLabel: msg.actionLabel,
-          originalText: lastSelection.text,
-          anchorRect: lastSelection.rect,
+          originalText,
+          anchorRect,
         });
         sendResponse({ ok: true });
       } catch (err) {
@@ -109,13 +129,17 @@
 
     if (lastSelection.type === 'range') {
       const range = lastSelection.range;
+      const editable = findEditableAncestor(range.startContainer);
       const sel = window.getSelection();
+      // Focus first, *then* restore the selection — focusing a contenteditable
+      // can collapse the current selection in some editors.
+      if (editable) {
+        try { editable.focus?.({ preventScroll: true }); } catch { editable.focus?.(); }
+      }
       sel.removeAllRanges();
       sel.addRange(range);
 
-      const editable = findEditableAncestor(range.startContainer);
       if (editable) {
-        editable.focus?.();
         try {
           if (document.execCommand('insertText', false, newText)) return true;
         } catch {}

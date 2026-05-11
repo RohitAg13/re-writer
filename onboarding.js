@@ -205,7 +205,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('finish').addEventListener('click', finish);
   $('openSettings').addEventListener('click', async () => {
     await chrome.storage.local.set({ onboarded: true });
-    chrome.runtime.openOptionsPage();
+    try {
+      await chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+    } catch (err) {
+      console.error('[Voice Rewriter] failed to open options', err);
+    }
   });
   $('model').addEventListener('input', () => { $('model').dataset.userEdited = '1'; });
 });

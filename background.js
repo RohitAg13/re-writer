@@ -61,18 +61,28 @@ function setupMenus() {
   });
 }
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === 'rw-settings') {
-    chrome.runtime.openOptionsPage();
-    return;
+async function openOptions() {
+  const url = chrome.runtime.getURL('options.html');
+  try {
+    // Focus an existing options tab if one is already open.
+    const tabs = await chrome.tabs.query({ url });
+    if (tabs && tabs.length) {
+      const t = tabs[0];
+      try { await chrome.tabs.update(t.id, { active: true }); } catch {}
+      if (t.windowId != null) {
+        try { await chrome.windows.update(t.windowId, { focused: true }); } catch {}
+      }
+      return;
+    }
+  } catch {}
+  try { await chrome.tabs.create({ url }); } catch (err) {
+    console.error('[Voice Rewriter] failed to open options', err);
   }
-  if (typeof info.menuItemId !== 'string' || !info.menuItemId.startsWith('rw-')) return;
-  const actionId = info.menuItemId.slice(3);
-  const action = ACTIONS.find(a => a.id === actionId);
-  if (!action) return;
+}
 
-  const text = (info.selectionText || '').trim();
-  if (!text || !tab?.id) return;
+async function dispatchStartPreview({ tabId, frameId, actionId, text }) {
+  const action = ACTIONS.find(a => a.id === actionId);
+  if (!action || !tabId) return;
 
   const settings = await getSettings();
   if (!settings.onboarded || !settings.apiKey) {
@@ -80,24 +90,98 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
-  // Tell the content script to open a streaming preview. The content script
-  // owns the saved selection range, so it kicks off the stream itself via a
-  // long-lived port.
+  const message = { action: 'startPreview', actionId: action.id, actionLabel: action.title, text };
+  const sendOpts = frameId != null ? { frameId } : undefined;
   try {
-    await chrome.tabs.sendMessage(
-      tab.id,
-      { action: 'startPreview', actionId: action.id, actionLabel: action.title, text },
-      { frameId: info.frameId },
-    );
-  } catch (err) {
-    console.error('[Voice Rewriter] startPreview failed', err);
+    await chrome.tabs.sendMessage(tabId, message, sendOpts);
+  } catch {
+    // Tab predates the current content-script registration — inject and retry.
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId, ...(frameId != null ? { frameIds: [frameId] } : { allFrames: true }) },
+        files: ['content.js'],
+      });
+      await chrome.tabs.sendMessage(tabId, message, sendOpts);
+    } catch (err2) {
+      console.error('[Voice Rewriter] startPreview failed', err2);
+      try {
+        await chrome.tabs.sendMessage(tabId, {
+          action: 'showStatus',
+          kind: 'error',
+          text: 'Voice Rewriter could not attach to this page. Try reloading the tab.',
+        });
+      } catch {}
+    }
   }
+}
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === 'rw-settings') {
+    openOptions();
+    return;
+  }
+  if (typeof info.menuItemId !== 'string' || !info.menuItemId.startsWith('rw-')) return;
+  const actionId = info.menuItemId.slice(3);
+  const text = (info.selectionText || '').trim();
+  if (!text || !tab?.id) return;
+  await dispatchStartPreview({ tabId: tab.id, frameId: info.frameId, actionId, text });
+});
+
+// ---------------- keyboard shortcut ----------------
+
+// Returns { frameId, text } for the frame in the active tab that currently
+// owns a non-empty selection (page selection or input/textarea selection).
+async function findSelectionFrame(tabId) {
+  let results;
+  try {
+    results = await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      func: () => {
+        const sel = (window.getSelection?.()?.toString() || '').trim();
+        if (sel) return sel;
+        const a = document.activeElement;
+        if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) {
+          const s = a.selectionStart, e = a.selectionEnd;
+          if (s != null && e != null && e > s) return a.value.slice(s, e);
+        }
+        return '';
+      },
+    });
+  } catch (err) {
+    console.error('[Voice Rewriter] selection probe failed', err);
+    return null;
+  }
+  for (const r of results || []) {
+    const t = (r?.result || '').trim();
+    if (t) return { frameId: r.frameId, text: t };
+  }
+  return null;
+}
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (!command.startsWith('rw-')) return;
+  const actionId = command.slice(3);
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+
+  const hit = await findSelectionFrame(tab.id);
+  if (!hit) {
+    try {
+      await chrome.tabs.sendMessage(tab.id, {
+        action: 'showStatus',
+        kind: 'error',
+        text: 'Select some text first, then trigger the shortcut.',
+      });
+    } catch {}
+    return;
+  }
+  await dispatchStartPreview({ tabId: tab.id, frameId: hit.frameId, actionId, text: hit.text });
 });
 
 chrome.action.onClicked.addListener(async () => {
   const s = await getSettings();
   if (!s.onboarded) chrome.tabs.create({ url: chrome.runtime.getURL('onboarding.html') });
-  else chrome.runtime.openOptionsPage();
+  else openOptions();
 });
 
 // ---------------- streaming over a port ----------------

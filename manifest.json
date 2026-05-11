@@ -22,5 +22,14 @@
   },
   "action": {
     "default_title": "Voice Rewriter — open settings"
+  },
+  "commands": {
+    "rw-refine": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Refine the selected text"
+    }
   }
 }
